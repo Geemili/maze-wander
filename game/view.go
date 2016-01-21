@@ -17,7 +17,7 @@ var tileCharMap map[int]rune = map[int]rune{
 	4:  '|',
 }
 
-func Render(g Game) {
+func (g Game) Render() {
 	for j := 0; j < g.WorldMap.Height; j++ {
 		for i := 0; i < g.WorldMap.Width; i++ {
 			termbox.SetCell(i, j, tileCharMap[g.WorldMap.GetTileAt(i, j)], termbox.ColorWhite, termbox.ColorDefault)
@@ -28,7 +28,7 @@ func Render(g Game) {
 	}
 }
 
-func (m MessageBox) RenderMessageBox() {
+func (m MessageBox) Render() {
 	for i := m.X; i < m.X+m.W; i++ {
 		termbox.SetCell(i, m.Y, '-', termbox.ColorWhite, termbox.ColorDefault)
 		termbox.SetCell(i, m.Y+m.H, '-', termbox.ColorWhite, termbox.ColorDefault)

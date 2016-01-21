@@ -31,7 +31,7 @@ func main() {
 	}()
 
 	dialogQueue := make(chan string)
-	go typeDialog(dialogQueue, "Somebody wanted to have a bad time...")
+	go typeDialog(dialogQueue, "You're gonna have a bad time...")
 
 	var tilesFile io.Reader
 	tilesFile, err = os.Open("assets/map.csv")
@@ -109,8 +109,10 @@ loop:
 		case text := <-dialogQueue:
 			messageBox.Message = text
 		default: // Do main loop
-			game.Render(*g)
-			messageBox.RenderMessageBox()
+
+			g.Render()
+			messageBox.Render()
+
 			termbox.Flush()
 			time.Sleep(10 * time.Millisecond)
 		}
