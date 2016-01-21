@@ -5,6 +5,7 @@ import (
 	"github.com/nsf/termbox-go"
 	"io"
 	"os"
+	"time"
 )
 
 func checkCollision(tiles [][]rune, x, y int) bool {
@@ -49,6 +50,18 @@ func main() {
 	var playerx, playery int = 20, 15
 	var tiles [][]rune
 
+	// Stuff for the dialog box
+	var dialogDisplay string = ""
+	dialog := "Somebody wanted to have a bad time..."
+	charsDisplayed := 0 // How many characters of the dialog have been typed?
+
+	eventQueue := make(chan termbox.Event) // So that we can have async keyboard
+	go func() {
+		for {
+			eventQueue <- termbox.PollEvent()
+		}
+	}()
+
 	var tilesFile io.Reader
 	tilesFile, err = os.Open("assets/map.csv")
 	if err != nil {
@@ -87,33 +100,43 @@ func main() {
 
 loop:
 	for {
-		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-		for y, row := range tiles {
-			for x, tile := range row {
-				termbox.SetCell(x, y, tile, termbox.ColorGreen, termbox.ColorDefault)
+		select { // Multiplex between channells
+		case ev := <-eventQueue: // Handle termbox events
+			if ev.Type == termbox.EventKey {
+				// Handle keyboard input
+				nextx, nexty := playerx, playery
+				switch {
+				case ev.Key == termbox.KeyEsc:
+					break loop
+				case ev.Key == termbox.KeyArrowLeft, ev.Ch == 'a':
+					nextx -= 1
+				case ev.Key == termbox.KeyArrowRight, ev.Ch == 'd':
+					nextx += 1
+				case ev.Key == termbox.KeyArrowUp, ev.Ch == 'w':
+					nexty -= 1
+				case ev.Key == termbox.KeyArrowDown, ev.Ch == 's':
+					nexty += 1
+				}
+				if !checkCollision(tiles, nextx, nexty) {
+					playerx, playery = nextx, nexty
+				}
 			}
-		}
-		termbox.SetCell(playerx, playery, '@', termbox.ColorYellow, termbox.ColorDefault)
-		dialogBox("Somebody wanted to have a bad time...")
-		termbox.Flush()
-		switch ev := termbox.PollEvent(); ev.Type {
-		case termbox.EventKey:
-			nextx, nexty := playerx, playery
-			switch {
-			case ev.Key == termbox.KeyEsc:
-				break loop
-			case ev.Key == termbox.KeyArrowLeft, ev.Ch == 'a':
-				nextx -= 1
-			case ev.Key == termbox.KeyArrowRight, ev.Ch == 'd':
-				nextx += 1
-			case ev.Key == termbox.KeyArrowUp, ev.Ch == 'w':
-				nexty -= 1
-			case ev.Key == termbox.KeyArrowDown, ev.Ch == 's':
-				nexty += 1
+		default:
+			// Update dialog typing
+			dialogDisplay = dialog[:charsDisplayed]
+			if charsDisplayed < len(dialog) {
+				charsDisplayed += 1
 			}
-			if !checkCollision(tiles, nextx, nexty) {
-				playerx, playery = nextx, nexty
+			termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+			for y, row := range tiles {
+				for x, tile := range row {
+					termbox.SetCell(x, y, tile, termbox.ColorGreen, termbox.ColorDefault)
+				}
 			}
+			termbox.SetCell(playerx, playery, '@', termbox.ColorYellow, termbox.ColorDefault)
+			dialogBox(dialogDisplay)
+			termbox.Flush()
+			time.Sleep(10 * time.Millisecond)
 		}
 	}
 }
