@@ -19,6 +19,26 @@ func checkCollision(tiles [][]rune, x, y int) bool {
 	}
 }
 
+func dialogBox(words string) {
+	for i := 1; i < 80; i++ {
+		termbox.SetCell(i, 30, '-', termbox.ColorWhite, termbox.ColorDefault)
+		termbox.SetCell(i, 36, '-', termbox.ColorWhite, termbox.ColorDefault)
+	}
+	for i := 31; i < 36; i++ {
+		termbox.SetCell(0, i, '|', termbox.ColorWhite, termbox.ColorDefault)
+		termbox.SetCell(80, i, '|', termbox.ColorWhite, termbox.ColorDefault)
+	}
+	termbox.SetCell(0, 30, '+', termbox.ColorWhite, termbox.ColorDefault)
+	termbox.SetCell(80, 30, '+', termbox.ColorWhite, termbox.ColorDefault)
+	termbox.SetCell(0, 36, '+', termbox.ColorWhite, termbox.ColorDefault)
+	termbox.SetCell(80, 36, '+', termbox.ColorWhite, termbox.ColorDefault)
+
+	for idx, char := range words {
+		termbox.SetCell(1+idx, 31, char, termbox.ColorWhite, termbox.ColorDefault)
+	}
+	termbox.SetCursor(1+len(words), 31)
+}
+
 func main() {
 	err := termbox.Init()
 	if err != nil {
@@ -74,6 +94,7 @@ loop:
 			}
 		}
 		termbox.SetCell(playerx, playery, '@', termbox.ColorYellow, termbox.ColorDefault)
+		dialogBox("Somebody wanted to have a bad time...")
 		termbox.Flush()
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
