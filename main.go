@@ -7,6 +7,18 @@ import (
 	"os"
 )
 
+func checkCollision(tiles [][]rune, x, y int) bool {
+	if x < 0 || y < 0 || y > len(tiles) || x > len(tiles[0]) {
+		return true
+	}
+	switch tiles[y][x] {
+	case '.':
+		return false
+	default:
+		return true
+	}
+}
+
 func main() {
 	err := termbox.Init()
 	if err != nil {
@@ -65,17 +77,21 @@ loop:
 		termbox.Flush()
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
-			switch ev.Key {
-			case termbox.KeyEsc:
+			nextx, nexty := playerx, playery
+			switch {
+			case ev.Key == termbox.KeyEsc:
 				break loop
-			case termbox.KeyArrowLeft:
-				playerx -= 1
-			case termbox.KeyArrowRight:
-				playerx += 1
-			case termbox.KeyArrowUp:
-				playery -= 1
-			case termbox.KeyArrowDown:
-				playery += 1
+			case ev.Key == termbox.KeyArrowLeft, ev.Ch == 'a':
+				nextx -= 1
+			case ev.Key == termbox.KeyArrowRight, ev.Ch == 'd':
+				nextx += 1
+			case ev.Key == termbox.KeyArrowUp, ev.Ch == 'w':
+				nexty -= 1
+			case ev.Key == termbox.KeyArrowDown, ev.Ch == 's':
+				nexty += 1
+			}
+			if !checkCollision(tiles, nextx, nexty) {
+				playerx, playery = nextx, nexty
 			}
 		}
 	}
