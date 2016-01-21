@@ -2,23 +2,12 @@ package main
 
 import (
 	"encoding/csv"
+	"github.com/geemili/maze-wander/game"
 	"github.com/nsf/termbox-go"
 	"io"
 	"os"
 	"time"
 )
-
-func checkCollision(tiles [][]rune, x, y int) bool {
-	if x < 0 || y < 0 || y > len(tiles) || x > len(tiles[0]) {
-		return true
-	}
-	switch tiles[y][x] {
-	case '.':
-		return false
-	default:
-		return true
-	}
-}
 
 func dialogBox(words string) {
 	for i := 1; i < 80; i++ {
@@ -54,9 +43,6 @@ func main() {
 	}
 	defer termbox.Close()
 
-	var playerx, playery int = 20, 15
-	var tiles [][]rune
-
 	// Stuff for the dialog box
 	var dialogDisplay string = ""
 
@@ -82,29 +68,41 @@ func main() {
 		panic(err)
 	}
 
-	tiles = make([][]rune, len(records))
+	playerx, playery := 0, 0
+
+	tiles := make([][]int, len(records))
 	for y, row := range records {
-		tileRow := make([]rune, len(row))
+		tileRow := make([]int, len(row))
 		for x, _ := range row {
 			switch row[x] {
 			case "-1":
-				tileRow[x] = ' '
+				tileRow[x] = 0
 			case "178":
-				tileRow[x] = '+'
+				tileRow[x] = 2
 			case "210":
-				tileRow[x] = '-'
+				tileRow[x] = 3
 			case "59":
-				tileRow[x] = '|'
+				tileRow[x] = 4
 			case "4":
 				playerx = x
 				playery = y
 				fallthrough
 			case "226":
-				tileRow[x] = '.'
+				tileRow[x] = 1
 			}
 		}
 		tiles[y] = tileRow
 	}
+
+	g := game.NewGame(len(tiles), len(tiles[0]))
+	for y, row := range tiles {
+		for x, tile := range row {
+			g.WorldMap.SetTileAt(x, y, tile)
+		}
+	}
+
+	player := &game.Entity{playerx, playery, 1, 1}
+	g.AddEntity(player)
 
 loop:
 	for {
@@ -112,7 +110,7 @@ loop:
 		case ev := <-eventQueue: // Handle termbox events
 			if ev.Type == termbox.EventKey {
 				// Handle keyboard input
-				nextx, nexty := playerx, playery
+				nextx, nexty := player.X, player.Y
 				switch {
 				case ev.Key == termbox.KeyEsc:
 					break loop
@@ -125,20 +123,14 @@ loop:
 				case ev.Key == termbox.KeyArrowDown, ev.Ch == 's':
 					nexty += 1
 				}
-				if !checkCollision(tiles, nextx, nexty) {
-					playerx, playery = nextx, nexty
+				if g.WorldMap.GetTileAt(nextx, nexty) == 1 {
+					player.X, player.Y = nextx, nexty
 				}
 			}
 		case text := <-dialogQueue:
 			dialogDisplay = text
 		default: // Do main loop
-			termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-			for y, row := range tiles {
-				for x, tile := range row {
-					termbox.SetCell(x, y, tile, termbox.ColorGreen, termbox.ColorDefault)
-				}
-			}
-			termbox.SetCell(playerx, playery, '@', termbox.ColorYellow, termbox.ColorDefault)
+			game.Render(*g)
 			dialogBox(dialogDisplay)
 			termbox.Flush()
 			time.Sleep(10 * time.Millisecond)
