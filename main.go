@@ -40,6 +40,13 @@ func dialogBox(words string) {
 	termbox.SetCursor(1+len(words), 31)
 }
 
+func typeDialog(dialogOutput chan string, text string) {
+	for idx, _ := range text {
+		dialogOutput <- text[:idx+1]
+		time.Sleep(50 * time.Millisecond)
+	}
+}
+
 func main() {
 	err := termbox.Init()
 	if err != nil {
@@ -52,8 +59,6 @@ func main() {
 
 	// Stuff for the dialog box
 	var dialogDisplay string = ""
-	dialog := "Somebody wanted to have a bad time..."
-	charsDisplayed := 0 // How many characters of the dialog have been typed?
 
 	eventQueue := make(chan termbox.Event) // So that we can have async keyboard
 	go func() {
@@ -61,6 +66,9 @@ func main() {
 			eventQueue <- termbox.PollEvent()
 		}
 	}()
+
+	dialogQueue := make(chan string)
+	go typeDialog(dialogQueue, "Somebody wanted to have a bad time...")
 
 	var tilesFile io.Reader
 	tilesFile, err = os.Open("assets/map.csv")
@@ -121,12 +129,9 @@ loop:
 					playerx, playery = nextx, nexty
 				}
 			}
-		default:
-			// Update dialog typing
-			dialogDisplay = dialog[:charsDisplayed]
-			if charsDisplayed < len(dialog) {
-				charsDisplayed += 1
-			}
+		case text := <-dialogQueue:
+			dialogDisplay = text
+		default: // Do main loop
 			termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
 			for y, row := range tiles {
 				for x, tile := range row {
