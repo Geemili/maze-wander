@@ -27,3 +27,29 @@ func Render(g Game) {
 		termbox.SetCell(entity.X, entity.Y, entityCharMap[entity.Kind], termbox.ColorYellow, termbox.ColorDefault)
 	}
 }
+
+func (m MessageBox) RenderMessageBox() {
+	for i := m.X; i < m.X+m.W; i++ {
+		termbox.SetCell(i, m.Y, '-', termbox.ColorWhite, termbox.ColorDefault)
+		termbox.SetCell(i, m.Y+m.H, '-', termbox.ColorWhite, termbox.ColorDefault)
+	}
+	for i := m.Y; i < m.Y+m.H; i++ {
+		termbox.SetCell(m.X, i, '|', termbox.ColorWhite, termbox.ColorDefault)
+		termbox.SetCell(m.X+m.W, i, '|', termbox.ColorWhite, termbox.ColorDefault)
+	}
+	termbox.SetCell(m.X, m.Y, '+', termbox.ColorWhite, termbox.ColorDefault)
+	termbox.SetCell(m.X+m.W, m.Y, '+', termbox.ColorWhite, termbox.ColorDefault)
+	termbox.SetCell(m.X, m.Y+m.H, '+', termbox.ColorWhite, termbox.ColorDefault)
+	termbox.SetCell(m.X+m.W, m.Y+m.H, '+', termbox.ColorWhite, termbox.ColorDefault)
+
+	x, y := 0, 0
+	for _, char := range m.Message {
+		termbox.SetCell(m.X+x+1, m.Y+y+1, char, termbox.ColorWhite, termbox.ColorDefault)
+		x++
+		if x > m.W-2 {
+			y++
+			x = 0
+		}
+	}
+	termbox.SetCursor(m.X+x+1, m.Y+y+1)
+}

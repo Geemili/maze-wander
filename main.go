@@ -9,26 +9,6 @@ import (
 	"time"
 )
 
-func dialogBox(words string) {
-	for i := 1; i < 80; i++ {
-		termbox.SetCell(i, 30, '-', termbox.ColorWhite, termbox.ColorDefault)
-		termbox.SetCell(i, 36, '-', termbox.ColorWhite, termbox.ColorDefault)
-	}
-	for i := 31; i < 36; i++ {
-		termbox.SetCell(0, i, '|', termbox.ColorWhite, termbox.ColorDefault)
-		termbox.SetCell(80, i, '|', termbox.ColorWhite, termbox.ColorDefault)
-	}
-	termbox.SetCell(0, 30, '+', termbox.ColorWhite, termbox.ColorDefault)
-	termbox.SetCell(80, 30, '+', termbox.ColorWhite, termbox.ColorDefault)
-	termbox.SetCell(0, 36, '+', termbox.ColorWhite, termbox.ColorDefault)
-	termbox.SetCell(80, 36, '+', termbox.ColorWhite, termbox.ColorDefault)
-
-	for idx, char := range words {
-		termbox.SetCell(1+idx, 31, char, termbox.ColorWhite, termbox.ColorDefault)
-	}
-	termbox.SetCursor(1+len(words), 31)
-}
-
 func typeDialog(dialogOutput chan string, text string) {
 	for idx, _ := range text {
 		dialogOutput <- text[:idx+1]
@@ -42,9 +22,6 @@ func main() {
 		panic(err)
 	}
 	defer termbox.Close()
-
-	// Stuff for the dialog box
-	var dialogDisplay string = ""
 
 	eventQueue := make(chan termbox.Event) // So that we can have async keyboard
 	go func() {
@@ -104,6 +81,8 @@ func main() {
 	player := &game.Entity{playerx, playery, 1, 1}
 	g.AddEntity(player)
 
+	messageBox := game.NewMessageBox()
+
 loop:
 	for {
 		select { // Multiplex between channells
@@ -128,10 +107,10 @@ loop:
 				}
 			}
 		case text := <-dialogQueue:
-			dialogDisplay = text
+			messageBox.Message = text
 		default: // Do main loop
 			game.Render(*g)
-			dialogBox(dialogDisplay)
+			messageBox.RenderMessageBox()
 			termbox.Flush()
 			time.Sleep(10 * time.Millisecond)
 		}
