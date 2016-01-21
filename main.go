@@ -12,10 +12,24 @@ func main() {
 	defer termbox.Close()
 
 	var playerx, playery int = 20, 15
+	tiles := [][]rune{
+		{'+', '-', '-', '-', '-', '+'},
+		{'|', '.', '.', '.', '.', '|'},
+		{'|', '.', '.', '.', '.', '|'},
+		{'|', '.', '.', '.', '.', '|'},
+		{'|', '.', '.', '.', '.', '|'},
+		{'|', '.', '.', '.', '.', '|'},
+		{'+', '-', '-', '-', '-', '+'},
+	}
 
 loop:
 	for {
 		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+		for y, row := range tiles {
+			for x, tile := range row {
+				termbox.SetCell(x, y, tile, termbox.ColorGreen, termbox.ColorDefault)
+			}
+		}
 		termbox.SetCell(playerx, playery, '@', termbox.ColorYellow, termbox.ColorDefault)
 		termbox.Flush()
 		switch ev := termbox.PollEvent(); ev.Type {
