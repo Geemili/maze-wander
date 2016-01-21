@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"github.com/nsf/termbox-go"
+	"io"
+	"os"
 )
 
 func main() {
@@ -12,14 +15,42 @@ func main() {
 	defer termbox.Close()
 
 	var playerx, playery int = 20, 15
-	tiles := [][]rune{
-		{'+', '-', '-', '-', '-', '+'},
-		{'|', '.', '.', '.', '.', '|'},
-		{'|', '.', '.', '.', '.', '|'},
-		{'|', '.', '.', '.', '.', '|'},
-		{'|', '.', '.', '.', '.', '|'},
-		{'|', '.', '.', '.', '.', '|'},
-		{'+', '-', '-', '-', '-', '+'},
+	var tiles [][]rune
+
+	var tilesFile io.Reader
+	tilesFile, err = os.Open("assets/map.csv")
+	if err != nil {
+		panic(err)
+	}
+
+	csvReader := csv.NewReader(tilesFile)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	tiles = make([][]rune, len(records))
+	for y, row := range records {
+		tileRow := make([]rune, len(row))
+		for x, _ := range row {
+			switch row[x] {
+			case "-1":
+				tileRow[x] = ' '
+			case "178":
+				tileRow[x] = '+'
+			case "210":
+				tileRow[x] = '-'
+			case "59":
+				tileRow[x] = '|'
+			case "4":
+				playerx = x
+				playery = y
+				fallthrough
+			case "226":
+				tileRow[x] = '.'
+			}
+		}
+		tiles[y] = tileRow
 	}
 
 loop:
