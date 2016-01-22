@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"github.com/geemili/maze-wander/game"
 	"github.com/nsf/termbox-go"
-	"io"
 	"os"
 	"time"
 )
@@ -30,53 +29,16 @@ func main() {
 		}
 	}()
 
-	dialogQueue := make(chan string)
-	go typeDialog(dialogQueue, "You're gonna have a bad time...")
-
-	var tilesFile io.Reader
-	tilesFile, err = os.Open("assets/map.csv")
-	if err != nil {
-		panic(err)
+	dialog := make(chan string)
+	conversation := game.Conversation{
+		[]string{
+			"You're gonna have a bad time...",
+			"Are you sure you want to continue?",
+		}, 0,
 	}
 
-	csvReader := csv.NewReader(tilesFile)
-	records, err := csvReader.ReadAll()
-	if err != nil {
-		panic(err)
-	}
-
-	playerx, playery := 0, 0
-
-	tiles := make([][]int, len(records))
-	for y, row := range records {
-		tileRow := make([]int, len(row))
-		for x, _ := range row {
-			switch row[x] {
-			case "-1":
-				tileRow[x] = 0
-			case "178":
-				tileRow[x] = 2
-			case "210":
-				tileRow[x] = 3
-			case "59":
-				tileRow[x] = 4
-			case "4":
-				playerx = x
-				playery = y
-				fallthrough
-			case "226":
-				tileRow[x] = 1
-			}
-		}
-		tiles[y] = tileRow
-	}
-
-	g := game.NewGame(len(tiles), len(tiles[0]))
-	for y, row := range tiles {
-		for x, tile := range row {
-			g.WorldMap.SetTileAt(x, y, tile)
-		}
-	}
+	tileMap, playerx, playery := loadMap("assets/map.csv")
+	g := game.Game{tileMap, []*game.Entity{}}
 
 	player := &game.Entity{playerx, playery, 1, 1}
 	g.AddEntity(player)
@@ -101,12 +63,14 @@ loop:
 					nexty -= 1
 				case ev.Key == termbox.KeyArrowDown, ev.Ch == 's':
 					nexty += 1
+				case ev.Ch == 'z':
+					conversation.Act(dialog)
 				}
 				if g.WorldMap.GetTileAt(nextx, nexty) == 1 {
 					player.X, player.Y = nextx, nexty
 				}
 			}
-		case text := <-dialogQueue:
+		case text := <-dialog:
 			messageBox.Message = text
 		default: // Do main loop
 
@@ -117,4 +81,46 @@ loop:
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
+}
+
+// Return the tilemap and the position of the player
+func loadMap(path string) (game.TileMap, int, int) {
+	tilesFile, err := os.Open(path)
+	if err != nil {
+		panic(err)
+	}
+
+	csvReader := csv.NewReader(tilesFile)
+	records, err := csvReader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	playerx, playery := 0, 0
+
+	w, h := len(records), len(records[0])
+
+	tileMap := game.TileMap{make([]int, w*h), w, h}
+	for y, row := range records {
+		for x, cell := range row {
+			pos := y*w + x
+			switch cell {
+			case "-1":
+				tileMap.Tiles[pos] = 0
+			case "178":
+				tileMap.Tiles[pos] = 2
+			case "210":
+				tileMap.Tiles[pos] = 3
+			case "59":
+				tileMap.Tiles[pos] = 4
+			case "4":
+				playerx = x
+				playery = y
+				fallthrough
+			case "226":
+				tileMap.Tiles[pos] = 1
+			}
+		}
+	}
+	return tileMap, playerx, playery
 }
