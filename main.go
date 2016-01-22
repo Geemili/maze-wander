@@ -29,21 +29,18 @@ func main() {
 		}
 	}()
 
-	dialog := make(chan string)
-	conversation := game.Conversation{
-		[]string{
-			"You're gonna have a bad time...",
-			"Are you sure you want to continue?",
-		}, 0,
-	}
+	messageBox := game.NewMessageBox()
+
+	conversation := game.NewConversation(messageBox,
+		"You're gonna have a bad time...",
+		"Are you sure you want to continue?",
+	)
 
 	tileMap, playerx, playery := loadMap("assets/map.csv")
 	g := game.Game{tileMap, []*game.Entity{}}
 
 	player := &game.Entity{playerx, playery, 1, 1}
 	g.AddEntity(player)
-
-	messageBox := game.NewMessageBox()
 
 loop:
 	for {
@@ -64,15 +61,15 @@ loop:
 				case ev.Key == termbox.KeyArrowDown, ev.Ch == 's':
 					nexty += 1
 				case ev.Ch == 'z':
-					conversation.Act(dialog)
+					conversation.Act()
 				}
 				if g.WorldMap.GetTileAt(nextx, nexty) == 1 {
 					player.X, player.Y = nextx, nexty
 				}
 			}
-		case text := <-dialog:
-			messageBox.Message = text
 		default: // Do main loop
+
+			conversation.Tick()
 
 			g.Render()
 			messageBox.Render()
